@@ -65,7 +65,7 @@ int main(void)
         web_poll(w);
         usleep(5000);
     }
-    web_stop(w);
+    web_stop(&w);
     host_close(h);
     return 0;
 }

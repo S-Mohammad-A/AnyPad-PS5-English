@@ -36,6 +36,7 @@ typedef struct {
 /* Listens on `port` on every interface. Returns NULL if it cannot. */
 web_t *web_start(const web_cfg *cfg, int port);
 void   web_poll(web_t *w);
-void   web_stop(web_t *w);
+/* Clears the owning pointer before closing; safe to call again. */
+void   web_stop(web_t **owner);
 
 #endif

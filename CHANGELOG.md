@@ -5,6 +5,10 @@ version is set in `src/version.h` and is also in the first line of the log, in
 the start-up notification, on the web page, and in the binary
 (`strings AnyPad-PS5-*.elf | grep anypad-version`).
 
+## Unreleased
+
+- Fix a shutdown use-after-free: stopping the web server now clears its owning pointer before Bluetooth cleanup can call the web-serving idle hook. Add a connected-controller shutdown regression test.
+
 ## 0.5.5-beta
 
 - Primera beta. Base: 0.4.7-alpha, que encuentra el DS4 en la consola; la 0.5.4 (= 0.4.7 + botón «Pulsar PS») se confirmó que funciona y pasa a beta.

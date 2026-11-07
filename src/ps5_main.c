@@ -319,7 +319,7 @@ int main(void)
     else if (g_stop && strcmp(why, "stop requested") == 0) why = "stop requested (flag or signal)";
 
     log_line("stopping: %s", why);
-    web_stop(g_web);
+    web_stop(&g_web);
     host_close(g_host);                 /* our links; removes our virtual pads */
     g_host = NULL;
     if (g_vpad_ok) {

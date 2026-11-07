@@ -412,11 +412,14 @@ void web_poll(web_t *w)
     }
 }
 
-void web_stop(web_t *w)
+void web_stop(web_t **owner)
 {
+    web_t *w;
     int i;
 
-    if (!w) return;
+    if (!owner || !*owner) return;
+    w = *owner;
+    *owner = NULL;                     /* idle callbacks must not reuse this server */
     for (i = 0; i < WEB_CLIENTS; i++) if (w->c[i].fd >= 0) close(w->c[i].fd);
     close(w->fd);
     free(w);
