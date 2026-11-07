@@ -22,6 +22,15 @@ static int g_port;
 
 static host_t *g_host;
 static web_t *g_web;
+static int g_idle_calls;
+
+/* Match the payload: Bluetooth waits also service the web server. */
+static void on_idle(void *ud)
+{
+    (void)ud;
+    g_idle_calls++;
+    web_poll(g_web);
+}
 static volatile int g_bt_state = WEB_BT_OK, g_retry;
 static char g_reason[200] = "";
 static int g_phys_readable = 1;
@@ -101,7 +110,8 @@ int main(void)
     sim_pad pad;
     sim_t *sim;
     web_cfg wc;
-    int i;
+    host_events ev = { 0 };
+    int i, idle_before_close;
 
     signal(SIGPIPE, SIG_IGN);
     g_port = 20000 + (int)(getpid() % 20000);
@@ -120,7 +130,8 @@ int main(void)
     pad.report_len = 78;
     pad.needs_output = 1;
     sim = sim_new(&pad);
-    g_host = host_open(sim_hci(sim), "build/test_web.db", NULL);
+    ev.idle = on_idle;
+    g_host = host_open(sim_hci(sim), "build/test_web.db", &ev);
     memset(&wc, 0, sizeof wc);
     wc.host = &g_host;
     wc.stop = &stop;
@@ -277,12 +288,23 @@ int main(void)
         CHECK(strncmp(out, "HTTP/1.1 200", 12) == 0);           /* still alive and well */
     }
 
+    printf("shutdown with a connected pad and a web-serving idle hook\n");
+    get("POST", "/api/pair", out, sizeof out);
+    run(8000);
+    CHECK(host_connected(g_host, 0));
+
     printf("stop from the page\n");
     get("POST", "/api/stop", out, sizeof out);
     CHECK(stop == 1);
 
-    web_stop(g_web);
+    web_stop(&g_web);
+    CHECK(g_web == NULL);
+    web_stop(&g_web);                   /* already stopped */
+    web_stop(NULL);
+    idle_before_close = g_idle_calls;
     host_close(g_host);
+    g_host = NULL;
+    CHECK(g_idle_calls > idle_before_close); /* cleanup really called web_poll(NULL) */
     sim_free(sim);
     printf(g_fail ? "%d check(s) failed\n" : "all web checks passed\n", g_fail);
     return g_fail != 0;
